@@ -4,6 +4,7 @@ namespace App\Repository;
 
 use App\Entity\Category;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\Common\Collections\Criteria;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
@@ -63,4 +64,46 @@ class CategoryRepository extends ServiceEntityRepository
 //            ->getOneOrNullResult()
 //        ;
 //    }
+
+    /**
+     * @return Category[]
+     */
+    public function findAllOrdered(): array
+    {
+        $qb = $this->createQueryBuilder('category')
+//            ->addSelect('fortuneCookie')
+//            ->leftJoin('category.fortuneCookies', 'fortuneCookie')
+            ->orderBy('category.name', Criteria::DESC);
+
+        $query = $qb->getQuery();
+
+        return $query->getResult();
+    }
+
+    /**
+     * @param string $term
+     * @return Category[]
+     */
+    public function search(string $term): array
+    {
+        return $this->createQueryBuilder('category')
+            ->addSelect('fortuneCookie')
+            ->leftJoin('category.fortuneCookies', 'fortuneCookie')
+            ->andWhere('category.name LIKE :searchTerm OR category.iconKey LIKE :searchTerm OR fortuneCookie.fortune LIKE :searchTerm')
+            ->setParameter('searchTerm', '%' . $term . '%')
+            ->orderBy('category.name', Criteria::DESC)
+            ->getQuery()
+            ->getResult();
+    }
+
+    public function findWithFortuneJoin(int $id): ?Category
+    {
+        return $this->createQueryBuilder('category')
+            ->addSelect('fortuneCookie')
+            ->leftJoin('category.fortuneCookies', 'fortuneCookie')
+            ->andWhere('category.id = :id')
+            ->setParameter('id', $id)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
 }

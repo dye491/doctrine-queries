@@ -21,7 +21,7 @@ class Category
     #[ORM\Column(length: 20)]
     private ?string $iconKey = null;
 
-    #[ORM\OneToMany(mappedBy: 'category', targetEntity: FortuneCookie::class)]
+    #[ORM\OneToMany(mappedBy: 'category', targetEntity: FortuneCookie::class, fetch: 'EXTRA_LAZY')]
     private Collection $fortuneCookies;
 
     public function __construct()

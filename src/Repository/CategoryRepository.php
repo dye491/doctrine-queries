@@ -5,6 +5,7 @@ namespace App\Repository;
 use App\Entity\Category;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Common\Collections\Criteria;
+use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
@@ -70,14 +71,13 @@ class CategoryRepository extends ServiceEntityRepository
      */
     public function findAllOrdered(): array
     {
-        $qb = $this->createQueryBuilder('category')
+        return $this->addOrderByCategoryName(
+            $this->createQueryBuilder('category')
 //            ->addSelect('fortuneCookie')
 //            ->leftJoin('category.fortuneCookies', 'fortuneCookie')
-            ->orderBy('category.name', Criteria::DESC);
-
-        $query = $qb->getQuery();
-
-        return $query->getResult();
+        )
+            ->getQuery()
+            ->getResult();
     }
 
     /**
@@ -86,24 +86,35 @@ class CategoryRepository extends ServiceEntityRepository
      */
     public function search(string $term): array
     {
-        return $this->createQueryBuilder('category')
-            ->addSelect('fortuneCookie')
-            ->leftJoin('category.fortuneCookies', 'fortuneCookie')
+        return $this
+            ->addOrderByCategoryName(
+                $this->addFortuneCookieJoinAndSelect()
+            )
             ->andWhere('category.name LIKE :searchTerm OR category.iconKey LIKE :searchTerm OR fortuneCookie.fortune LIKE :searchTerm')
             ->setParameter('searchTerm', '%' . $term . '%')
-            ->orderBy('category.name', Criteria::DESC)
             ->getQuery()
             ->getResult();
     }
 
     public function findWithFortuneJoin(int $id): ?Category
     {
-        return $this->createQueryBuilder('category')
-            ->addSelect('fortuneCookie')
-            ->leftJoin('category.fortuneCookies', 'fortuneCookie')
+        return $this->addFortuneCookieJoinAndSelect()
             ->andWhere('category.id = :id')
             ->setParameter('id', $id)
             ->getQuery()
             ->getOneOrNullResult();
+    }
+
+    private function addFortuneCookieJoinAndSelect(QueryBuilder $qb = null): QueryBuilder
+    {
+        return ($qb ?? $this->createQueryBuilder('category'))
+            ->addSelect('fortuneCookie')
+            ->leftJoin('category.fortuneCookies', 'fortuneCookie');
+    }
+
+    private function addOrderByCategoryName(QueryBuilder $qb): QueryBuilder
+    {
+        return ($qb ?? $this->createQueryBuilder('category'))
+            ->addOrderBy('category.name', Criteria::DESC);
     }
 }

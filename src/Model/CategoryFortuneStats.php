@@ -5,9 +5,9 @@ namespace App\Model;
 class CategoryFortuneStats
 {
     public function __construct(
-        public $fortunesPrinted,
-        public $fortunesAverage,
-        public $name
+        public int $fortunesPrinted,
+        public float $fortunesAverage,
+        public string $name
     ) {
     }
 }

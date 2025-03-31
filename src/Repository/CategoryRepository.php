@@ -5,6 +5,7 @@ namespace App\Repository;
 use App\Entity\Category;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Common\Collections\Criteria;
+use Doctrine\ORM\Query\Expr;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -21,6 +22,12 @@ class CategoryRepository extends ServiceEntityRepository
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, Category::class);
+    }
+
+    public static function createFortuneCookiesStillInProductionCriteria(): Criteria
+    {
+        return Criteria::create()
+            ->andWhere(Criteria::expr()->eq('discontinued', false));
     }
 
     public function save(Category $entity, bool $flush = false): void
@@ -86,12 +93,23 @@ class CategoryRepository extends ServiceEntityRepository
      */
     public function search(string $term): array
     {
+        $termList = explode(' ', $term);
+
         return $this
             ->addOrderByCategoryName(
                 $this->addFortuneCookieJoinAndSelect()
             )
-            ->andWhere('category.name LIKE :searchTerm OR category.iconKey LIKE :searchTerm OR fortuneCookie.fortune LIKE :searchTerm')
+            ->andWhere(
+                (new Expr())->orX(
+                    (new Expr())->like('category.name', ':searchTerm'),
+                    (new Expr())->like('category.iconKey', ':searchTerm'),
+                    (new Expr())->like('fortuneCookie.fortune', ':searchTerm'),
+                    (new Expr())->in('category.name', ':termList')
+                )
+            )
+//            ->andWhere('category.name LIKE :searchTerm OR category.iconKey LIKE :searchTerm OR category.name IN (:termList) OR fortuneCookie.fortune LIKE :searchTerm')
             ->setParameter('searchTerm', '%' . $term . '%')
+            ->setParameter('termList', $termList)
             ->getQuery()
             ->getResult();
     }

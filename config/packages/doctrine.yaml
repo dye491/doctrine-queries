@@ -16,6 +16,12 @@ doctrine:
                 dir: '%kernel.project_dir%/src/Entity'
                 prefix: 'App\Entity'
                 alias: App
+        filters:
+            fortune_cookies_discontinued:
+                class: App\Doctrine\DiscontinuedFilter
+                enabled: true
+                parameters:
+                    discontinued: false
 
 when@test:
     doctrine:

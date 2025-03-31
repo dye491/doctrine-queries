@@ -66,6 +66,13 @@ class Category
         return $this->fortuneCookies;
     }
 
+    public function getFortuneCookiesStillInProduction(): Collection
+    {
+        $criteria = CategoryRepository::createFortuneCookiesStillInProductionCriteria();
+
+        return $this->fortuneCookies->matching($criteria);
+    }
+
     public function addFortuneCookie(FortuneCookie $fortuneCookie): self
     {
         if (!$this->fortuneCookies->contains($fortuneCookie)) {

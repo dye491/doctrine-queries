@@ -78,11 +78,8 @@ class CategoryRepository extends ServiceEntityRepository
      */
     public function findAllOrdered(): array
     {
-        return $this->addOrderByCategoryName(
-            $this->createQueryBuilder('category')
-//            ->addSelect('fortuneCookie')
-//            ->leftJoin('category.fortuneCookies', 'fortuneCookie')
-        )
+        return $this->addGroupByCategory(
+            $this->addOrderByCategoryName())
             ->getQuery()
             ->getResult();
     }
@@ -95,10 +92,7 @@ class CategoryRepository extends ServiceEntityRepository
     {
         $termList = explode(' ', $term);
 
-        return $this
-            ->addOrderByCategoryName(
-                $this->addFortuneCookieJoinAndSelect()
-            )
+        return $this->addGroupByCategory()
             ->andWhere(
                 (new Expr())->orX(
                     (new Expr())->like('category.name', ':searchTerm'),
@@ -107,7 +101,6 @@ class CategoryRepository extends ServiceEntityRepository
                     (new Expr())->in('category.name', ':termList')
                 )
             )
-//            ->andWhere('category.name LIKE :searchTerm OR category.iconKey LIKE :searchTerm OR category.name IN (:termList) OR fortuneCookie.fortune LIKE :searchTerm')
             ->setParameter('searchTerm', '%' . $term . '%')
             ->setParameter('termList', $termList)
             ->getQuery()
@@ -119,6 +112,7 @@ class CategoryRepository extends ServiceEntityRepository
         return $this->addFortuneCookieJoinAndSelect()
             ->andWhere('category.id = :id')
             ->setParameter('id', $id)
+            ->orderBy('RAND()', Criteria::ASC)
             ->getQuery()
             ->getOneOrNullResult();
     }
@@ -130,7 +124,15 @@ class CategoryRepository extends ServiceEntityRepository
             ->leftJoin('category.fortuneCookies', 'fortuneCookie');
     }
 
-    private function addOrderByCategoryName(QueryBuilder $qb): QueryBuilder
+    private function addGroupByCategory(QueryBuilder $qb = null)
+    {
+        return ($qb ?? $this->createQueryBuilder('category'))
+            ->addSelect('COUNT(fortuneCookie.id) AS fortuneCookiesTotal')
+            ->leftJoin('category.fortuneCookies', 'fortuneCookie')
+            ->addGroupBy('category.id');
+    }
+
+    private function addOrderByCategoryName(QueryBuilder $qb = null): QueryBuilder
     {
         return ($qb ?? $this->createQueryBuilder('category'))
             ->addOrderBy('category.name', Criteria::DESC);
